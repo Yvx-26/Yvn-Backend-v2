@@ -5,38 +5,24 @@ import binascii
 import re
 from typing import Optional, Dict, Any
 from app.core.config import RAW_MIN_LEN
+from app.utils.hex_codec import compact_hex_text
 
 
-class _AllowedLens:
-    """判断 payload 长度是否允许写入原始波形表。"""
-
-    def __contains__(self, value):
-        try:
-            return int(value) >= RAW_MIN_LEN
-        except Exception:
-            return False
+def is_allowed_raw_length(value) -> bool:
+    """保持既有最小长度策略；不再伪装成允许帧长集合。"""
+    try:
+        return int(value) >= RAW_MIN_LEN
+    except Exception:
+        return False
 
 
-# 允许直接写入原始帧表的典型 payload 长度集合。
-RAW_ALLOWED_LENS = _AllowedLens()
 # 用于识别纯十六进制文本的正则表达式。
 _HEX_RE = re.compile(r"^[0-9a-fA-F]+$")
 
 
-def _compact_text(text: str) -> str:
-    return (
-        str(text or "")
-        .strip()
-        .replace(" ", "")
-        .replace("\n", "")
-        .replace("\r", "")
-        .replace("\t", "")
-    )
-
-
 def _is_hex_string(text: str) -> bool:
     """判断字符串是否像十六进制 payload。"""
-    s = _compact_text(text)
+    s = compact_hex_text(text)
     return bool(s) and len(s) % 2 == 0 and _HEX_RE.match(s) is not None
 
 
@@ -74,7 +60,7 @@ def normalize_payload_to_hex(raw_payload: Optional[str], encoding: Optional[str]
 
     try:
         if fmt in ("hex", "payload_hex"):
-            clean = _compact_text(text)
+            clean = compact_hex_text(text)
             bytes.fromhex(clean)
             payload_hex = clean.lower()
             return {
@@ -97,7 +83,7 @@ def normalize_payload_to_hex(raw_payload: Optional[str], encoding: Optional[str]
         # 自动识别时必须先判断 hex，再判断 base64。
         # 4096 字节 hex 是 8192 个十六进制字符；如果先按 base64 解码，可能误解码成错误长度。
         if _is_hex_string(text):
-            clean = _compact_text(text)
+            clean = compact_hex_text(text)
             payload_hex = clean.lower()
             return {
                 "hex": payload_hex,

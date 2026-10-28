@@ -20,3 +20,7 @@ htmlcov/
 *.log
 dist/
 build/
+var/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

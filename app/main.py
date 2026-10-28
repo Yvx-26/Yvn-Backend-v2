@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
-from app.services.mqtt_bridge import (
+from app.integrations.mqtt_bridge import (
     start_mqtt_bridge,
     stop_mqtt_bridge,
 )
@@ -26,9 +26,10 @@ async def lifespan(app: FastAPI):
 
     start_mqtt_bridge()
 
-    yield
-
-    stop_mqtt_bridge()
+    try:
+        yield
+    finally:
+        stop_mqtt_bridge()
 
 
 def create_app() -> FastAPI:
@@ -36,7 +37,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Low Voltage Cable Fault Backend",
         lifespan=lifespan,
-)
+    )
 
     # 允许前端跨域访问。当前前后端部署在同一服务器时影响不大，
     # 但开发阶段或外部页面访问接口时需要开启 CORS。

@@ -1,0 +1,68 @@
+{
+  "summary/filled": {
+    "response_sha256": "49d4103f20cb01893bad071e6d432a3a1a83736f8208cc2f09cc60775e7f7f1f",
+    "queries": [
+      "SELECT COUNT(DISTINCT IMEI) AS device_total FROM DEVICE_RAW_FRAME",
+      "SELECT COUNT(*) AS wave_today FROM DEVICE_RAW_FRAME WHERE DATE(CREATED_AT)=CURDATE()",
+      "SELECT COUNT(*) AS location_today FROM device_location_latest"
+    ]
+  },
+  "summary/empty": {
+    "response_sha256": "ad186ab568ebc7f106c21d07e9edf4c799a4a03fd3b68558a86636d0a689a424",
+    "queries": [
+      "SELECT COUNT(DISTINCT IMEI) AS device_total FROM DEVICE_RAW_FRAME",
+      "SELECT COUNT(*) AS wave_today FROM DEVICE_RAW_FRAME WHERE DATE(CREATED_AT)=CURDATE()",
+      "SELECT COUNT(*) AS location_today FROM device_location_latest"
+    ]
+  },
+  "devices/boundaries": {
+    "response_sha256": "7c60fd89dc05d0def083aa332cb3dd785edb557656b840dab06efbef5f427149",
+    "queries": [
+      "SELECT t.IMEI AS imei, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END AS cable_key, COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) AS cable_name, t.CREATED_AT AS last_wave_time, TIMESTAMPDIFF(SECOND, t.CREATED_AT, NOW()) AS age_seconds FROM ( SELECT IMEI, MAX(CREATED_AT) AS CREATED_AT FROM DEVICE_RAW_FRAME GROUP BY IMEI ) t LEFT JOIN managed_device m ON m.device_id = t.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = t.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci ORDER BY t.CREATED_AT DESC"
+    ]
+  },
+  "devices/empty": {
+    "response_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "queries": [
+      "SELECT t.IMEI AS imei, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END AS cable_key, COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) AS cable_name, t.CREATED_AT AS last_wave_time, TIMESTAMPDIFF(SECOND, t.CREATED_AT, NOW()) AS age_seconds FROM ( SELECT IMEI, MAX(CREATED_AT) AS CREATED_AT FROM DEVICE_RAW_FRAME GROUP BY IMEI ) t LEFT JOIN managed_device m ON m.device_id = t.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = t.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci ORDER BY t.CREATED_AT DESC"
+    ]
+  },
+  "map/dict": {
+    "response_sha256": "daac181a1055ca0db246d3c1d9dd8430eda562f961655d52ab4a470512031876",
+    "queries": [
+      "SELECT d.device_id AS imei, d.lng AS lng, d.lat AS lat, d.ts AS ts, d.updated_at AS updated_at, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END AS cable_key, COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) AS cable_name, TIMESTAMPDIFF(SECOND, d.updated_at, NOW()) AS age_seconds FROM device_location_latest d LEFT JOIN managed_device m ON m.device_id = d.device_id COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = d.device_id COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci WHERE d.lng IS NOT NULL AND d.lat IS NOT NULL ORDER BY d.updated_at DESC"
+    ]
+  },
+  "map/tuple": {
+    "response_sha256": "daac181a1055ca0db246d3c1d9dd8430eda562f961655d52ab4a470512031876",
+    "queries": [
+      "SELECT d.device_id AS imei, d.lng AS lng, d.lat AS lat, d.ts AS ts, d.updated_at AS updated_at, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END AS cable_key, COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) AS cable_name, TIMESTAMPDIFF(SECOND, d.updated_at, NOW()) AS age_seconds FROM device_location_latest d LEFT JOIN managed_device m ON m.device_id = d.device_id COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = d.device_id COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci WHERE d.lng IS NOT NULL AND d.lat IS NOT NULL ORDER BY d.updated_at DESC"
+    ]
+  },
+  "map/empty": {
+    "response_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "queries": [
+      "SELECT d.device_id AS imei, d.lng AS lng, d.lat AS lat, d.ts AS ts, d.updated_at AS updated_at, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END AS cable_key, COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) AS cable_name, TIMESTAMPDIFF(SECOND, d.updated_at, NOW()) AS age_seconds FROM device_location_latest d LEFT JOIN managed_device m ON m.device_id = d.device_id COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = d.device_id COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci WHERE d.lng IS NOT NULL AND d.lat IS NOT NULL ORDER BY d.updated_at DESC"
+    ]
+  },
+  "operation/empty": {
+    "response_sha256": "403c8f818c833fbbeb3fc9fb5d86fdce00849a447b7daae278828b9b450cad86",
+    "queries": [
+      "SELECT COUNT(*) AS total, MIN(CREATED_AT) AS first_time, MAX(CREATED_AT) AS last_time FROM DEVICE_RAW_FRAME WHERE DATE(CREATED_AT)=CURDATE()",
+      "SELECT FLOOR(HOUR(CREATED_AT) / 2) * 2 AS bucket_hour, COUNT(*) AS frame_count FROM DEVICE_RAW_FRAME WHERE DATE(CREATED_AT)=CURDATE() GROUP BY bucket_hour ORDER BY bucket_hour",
+      "SELECT COALESCE(COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END), '未绑定线路') AS line_name, COALESCE(CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END, 'unbound') AS line_id, COUNT(*) AS frame_count FROM DEVICE_RAW_FRAME r LEFT JOIN managed_device m ON m.device_id = r.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = r.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci WHERE DATE(r.CREATED_AT)=CURDATE() GROUP BY COALESCE(CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END, 'unbound'), COALESCE(COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END), '未绑定线路') ORDER BY frame_count DESC",
+      "SELECT ID, IMEI, CABLE, CREATED_AT FROM DEVICE_RAW_FRAME ORDER BY CREATED_AT DESC, ID DESC LIMIT 8",
+      "SELECT COUNT(*) AS device_total, SUM(CASE WHEN age_seconds <= 90 THEN 1 ELSE 0 END) AS online_total FROM ( SELECT TIMESTAMPDIFF(SECOND, MAX(CREATED_AT), NOW()) AS age_seconds FROM DEVICE_RAW_FRAME GROUP BY IMEI ) latest"
+    ]
+  },
+  "operation/filled": {
+    "response_sha256": "5113debd8a96cb3cc007fbf45115e8db91951b43ae37254e67c786604d9e83e8",
+    "queries": [
+      "SELECT COUNT(*) AS total, MIN(CREATED_AT) AS first_time, MAX(CREATED_AT) AS last_time FROM DEVICE_RAW_FRAME WHERE DATE(CREATED_AT)=CURDATE()",
+      "SELECT FLOOR(HOUR(CREATED_AT) / 2) * 2 AS bucket_hour, COUNT(*) AS frame_count FROM DEVICE_RAW_FRAME WHERE DATE(CREATED_AT)=CURDATE() GROUP BY bucket_hour ORDER BY bucket_hour",
+      "SELECT COALESCE(COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END), '未绑定线路') AS line_name, COALESCE(CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END, 'unbound') AS line_id, COUNT(*) AS frame_count FROM DEVICE_RAW_FRAME r LEFT JOIN managed_device m ON m.device_id = r.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN wave_device_bind b ON b.imei = r.IMEI COLLATE utf8mb4_unicode_ci LEFT JOIN managed_line l ON l.line_id = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci LEFT JOIN cable_info c ON c.cable_key = (CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END) COLLATE utf8mb4_unicode_ci WHERE DATE(r.CREATED_AT)=CURDATE() GROUP BY COALESCE(CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END, 'unbound'), COALESCE(COALESCE(l.name, c.cable_name, CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END), '未绑定线路') ORDER BY frame_count DESC",
+      "SELECT ID, IMEI, CABLE, CREATED_AT FROM DEVICE_RAW_FRAME ORDER BY CREATED_AT DESC, ID DESC LIMIT 8",
+      "SELECT COUNT(*) AS device_total, SUM(CASE WHEN age_seconds <= 90 THEN 1 ELSE 0 END) AS online_total FROM ( SELECT TIMESTAMPDIFF(SECOND, MAX(CREATED_AT), NOW()) AS age_seconds FROM DEVICE_RAW_FRAME GROUP BY IMEI ) latest"
+    ]
+  }
+}

@@ -1,0 +1,402 @@
+{
+  "missing/latest": {
+    "response_sha256": "8834357650eeaa189ddc74381522ad58c9ce505d6c65424a22550a074843e0ff",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "missing/phase": {
+    "response_sha256": "445455a5a1259491777f5fc7de3bed8b6ac7a26b23cf8a6dd7851a3dfe3ab7ce",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "missing/history_id": {
+    "response_sha256": "112592f55451586dd837f8fc00e947621ae3d3dad6a5747b924b0aa96b481bc7",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "missing/history_latest": {
+    "response_sha256": "112592f55451586dd837f8fc00e947621ae3d3dad6a5747b924b0aa96b481bc7",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "valid/latest": {
+    "response_sha256": "b89bb9474351f88e6229da90d79a9cb0aa3d2a442ee73b68a3cfd51a6aabd63b",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "valid/phase": {
+    "response_sha256": "b89bb9474351f88e6229da90d79a9cb0aa3d2a442ee73b68a3cfd51a6aabd63b",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "valid/history_id": {
+    "response_sha256": "a1cb27f2daf60d12b23b64dbb8d32ee03e130ab80419057646c80d552a5a770e",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "valid/history_latest": {
+    "response_sha256": "a1cb27f2daf60d12b23b64dbb8d32ee03e130ab80419057646c80d552a5a770e",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "invalid_tail/latest": {
+    "response_sha256": "e587e6cc55b3ba3db8e6f528652369ce5d62a987b84bb34d66c123e1606dc40c",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "invalid_tail/phase": {
+    "response_sha256": "e587e6cc55b3ba3db8e6f528652369ce5d62a987b84bb34d66c123e1606dc40c",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "invalid_tail/history_id": {
+    "response_sha256": "70e9c26ee16ae04829994b9dd7f54e79b5abbe73563c24b2530948a25332ffa3",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "invalid_tail/history_latest": {
+    "response_sha256": "70e9c26ee16ae04829994b9dd7f54e79b5abbe73563c24b2530948a25332ffa3",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "invalid_phase/latest": {
+    "response_sha256": "30ff2797f10fea5078147c327085b87b4651a9af72c73e1ba1944579e05f4345",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "invalid_phase/phase": {
+    "response_sha256": "30ff2797f10fea5078147c327085b87b4651a9af72c73e1ba1944579e05f4345",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "invalid_phase/history_id": {
+    "response_sha256": "895cc638d80d61990d6cfcbdeac279f2d7006c4365382351ba7248650158f884",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "invalid_phase/history_latest": {
+    "response_sha256": "895cc638d80d61990d6cfcbdeac279f2d7006c4365382351ba7248650158f884",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "legacy_csv/latest": {
+    "response_sha256": "8853cd960cdfae42ab03e49a85dfadd0a2aeca570e18dc823bd5d309f98b8d7b",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "legacy_csv/phase": {
+    "response_sha256": "8853cd960cdfae42ab03e49a85dfadd0a2aeca570e18dc823bd5d309f98b8d7b",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "legacy_csv/history_id": {
+    "response_sha256": "26fdea6ed82d8031ffd7b8a1de2302087228ca69afdde097bfa794dd7358b911",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "legacy_csv/history_latest": {
+    "response_sha256": "26fdea6ed82d8031ffd7b8a1de2302087228ca69afdde097bfa794dd7358b911",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "odd_hex/latest": {
+    "response_sha256": "89778120f0e6306ee1b31f05328e647075b2e6590d498b12396ffb1623c4d780",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "odd_hex/phase": {
+    "response_sha256": "89778120f0e6306ee1b31f05328e647075b2e6590d498b12396ffb1623c4d780",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "odd_hex/history_id": {
+    "response_sha256": "4a10db56e3ca3964b4497308537e80bcccd4d3d4f03f212da13201113c5a0746",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "odd_hex/history_latest": {
+    "response_sha256": "4a10db56e3ca3964b4497308537e80bcccd4d3d4f03f212da13201113c5a0746",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "hex_bytes/latest": {
+    "response_sha256": "4a68728e253ada8a19da2ab3b98b2c0c7f9eb7c1567bfdfcd6f41108d2eabb90",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "hex_bytes/phase": {
+    "response_sha256": "4a68728e253ada8a19da2ab3b98b2c0c7f9eb7c1567bfdfcd6f41108d2eabb90",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "hex_bytes/history_id": {
+    "response_sha256": "5b3c623babcbeedcef06f6fa667f3ccfe34c63f31a01dd8e589cbdd101ad9a6c",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "hex_bytes/history_latest": {
+    "response_sha256": "5b3c623babcbeedcef06f6fa667f3ccfe34c63f31a01dd8e589cbdd101ad9a6c",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "empty_payload/latest": {
+    "response_sha256": "3d8a54fcb4aac1540a1828910d08e3e91708d11ea97be67785f9ef7b66a285ce",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1"
+        ]
+      }
+    ]
+  },
+  "empty_payload/phase": {
+    "response_sha256": "3d8a54fcb4aac1540a1828910d08e3e91708d11ea97be67785f9ef7b66a285ce",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND CABLE=%s ORDER BY CREATED_AT DESC, ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          "B-E"
+        ]
+      }
+    ]
+  },
+  "empty_payload/history_id": {
+    "response_sha256": "a59361935d75c42478f537bfeb269887986ddc8a94dc021a08e03fc923c77a96",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "empty_payload/history_latest": {
+    "response_sha256": "a59361935d75c42478f537bfeb269887986ddc8a94dc021a08e03fc923c77a96",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND PAYLOAD_LEN >= %s ORDER BY ID DESC LIMIT 1",
+        "params": [
+          "D1",
+          6000
+        ]
+      }
+    ]
+  },
+  "valid/history_truncated": {
+    "response_sha256": "1596c515018bfc8e77b044afaa8434c9701f8024a62be8a241f56a4c158a2e46",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  },
+  "invalid_tail/history_truncated": {
+    "response_sha256": "8d21718f71ed90c2a0ec47fd8588ddfd99af243741e81f7bcfedbe0a5c579ac4",
+    "queries": [
+      {
+        "sql": "SELECT ID, IMEI, CABLE, PAYLOAD, PAYLOAD_LEN, CREATED_AT FROM DEVICE_RAW_FRAME WHERE IMEI=%s AND ID=%s LIMIT 1",
+        "params": [
+          "D1",
+          17
+        ]
+      }
+    ]
+  }
+}

@@ -26,3 +26,13 @@ SQL。建议从现有生产/测试库执行 `SHOW CREATE TABLE`，确认后保�
 
 模型推理迁移已经移除。当前新环境只需在既有采集库基础上执行
 `frontend_infrastructure.sql` 和 `latest_tdr_frame_protocol.sql`。
+
+## 可靠接收回执（第二批改进）
+
+`ingestion_receipts.sql` 只新增 `ingestion_receipt`。在启用新版 MQTT Bridge 或
+HTTP `Idempotency-Key` 前由操作者人工执行；后端不会自动建表。
+该表必须与原始帧、定位、解析样本位于同一个支持事务的 MySQL 库中。
+
+当前仅生成迁移文件，按用户要求暂不对当前数据库执行。缺表时可靠消费暂停、
+消息保留在本地队列，不会把未确认处理成功的数据直接当作完成。
+完整启用和恢复步骤见 `docs/reliable-ingestion.md`。

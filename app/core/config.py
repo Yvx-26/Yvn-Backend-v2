@@ -21,6 +21,9 @@ db_config = {
     "password": os.getenv("DB_PASSWORD", "123456"),
     "database": os.getenv("DB_DATABASE", "emqx"),
     "charset": "utf8mb4",
+    "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT_SECONDS", "5")),
+    "read_timeout": int(os.getenv("DB_READ_TIMEOUT_SECONDS", "10")),
+    "write_timeout": int(os.getenv("DB_WRITE_TIMEOUT_SECONDS", "10")),
 }
 
 # 数据表
@@ -84,3 +87,12 @@ MQTT_LOCAL_BACKEND_URL = os.getenv(
 
 # 波形查询默认最小十六进制文本长度
 DEFAULT_MIN_HEX_LEN = 6000
+
+# 本地接收日志不进入 Git；确认消息前必须先持久化到此目录。
+MQTT_INBOX_PATH = Path(os.getenv("MQTT_INBOX_PATH", str(BACKEND_ROOT / "var" / "mqtt-inbox.sqlite3")))
+if not MQTT_INBOX_PATH.is_absolute():
+    MQTT_INBOX_PATH = BACKEND_ROOT / MQTT_INBOX_PATH
+MQTT_RETRY_MAX_ATTEMPTS = int(os.getenv("MQTT_RETRY_MAX_ATTEMPTS", "10"))
+MQTT_INBOX_MAX_PENDING = int(os.getenv("MQTT_INBOX_MAX_PENDING", "10000"))
+MQTT_MAX_MESSAGE_BYTES = int(os.getenv("MQTT_MAX_MESSAGE_BYTES", "262144"))
+MQTT_DONE_RETENTION_DAYS = int(os.getenv("MQTT_DONE_RETENTION_DAYS", "7"))

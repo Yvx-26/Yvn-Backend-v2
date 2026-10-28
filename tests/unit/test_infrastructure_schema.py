@@ -63,6 +63,14 @@ class InfrastructureSchemaTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             ManagedDevice.model_validate(payload)
 
+    def test_configuration_write_does_not_require_runtime_display_fields(self):
+        payload = device_payload()
+        for key in ("state", "lastSeen", "latencyMs", "signalDbm", "updatedAt"):
+            payload.pop(key)
+        device = ManagedDevice.model_validate(payload)
+        self.assertEqual(device.state, "offline")
+        self.assertEqual(device.lastSeen, "")
+
 
 if __name__ == "__main__":
     unittest.main()

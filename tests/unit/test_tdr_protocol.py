@@ -1,6 +1,6 @@
 import unittest
 
-from app.services.tdr.parser import get_frame_basic_info, parse_tdr_payload_hex
+from app.protocols.tdr import get_frame_basic_info, parse_tdr_payload_hex
 
 
 def build_frame() -> bytes:

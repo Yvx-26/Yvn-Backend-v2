@@ -1,91 +1,78 @@
-"""波形 payload 转采样点的通用工具。
+"""公共波形业务：统一解码，按原接口投影响应；不负责 HTTP 或事务提交。"""
 
-最新设备协议的完整帧固定为 4096 字节：Byte33~4032 是 4000 个
-uint8 波形点，Byte4095 是 0x55 帧尾。本模块保留完整帧转换函数，同时
-对完整帧执行协议校验，避免把帧头、故障字段或预留区误当成波形。
-"""
-
-from typing import Any, List
-
-from app.services.tdr.parser import (
-    TDR_END_BYTE,
-    TDR_START_BYTE,
-    TDR_TOTAL_BYTES,
-    TDR_WAVE_END,
-    TDR_WAVE_START,
-    phase_pair_from_code,
-)
+from app.protocols.tdr import parse_tdr_payload_hex
+from app.repositories import waveforms
+from app.services.compat.waveform import payload_to_samples, extract_waveform_from_samples
 
 
-# 十六进制字符白名单。
-_HEX_CHARS = set("0123456789abcdefABCDEF")
-
-
-def _to_text(payload: Any) -> str:
-    """把数据库中的 PAYLOAD 统一转为字符串。"""
-    if payload is None:
-        return ""
-
-    if isinstance(payload, (bytes, bytearray)):
-        try:
-            return bytes(payload).decode("utf-8")
-        except Exception:
-            return bytes(payload).hex()
-
-    return str(payload)
-
-
-def _clean_hex(text: str) -> str:
-    """清理十六进制字符串中的空白字符。"""
-    return (
-        text.strip()
-        .replace(" ", "")
-        .replace("\n", "")
-        .replace("\r", "")
-        .replace("\t", "")
-    )
-
-
-def payload_to_samples(payload: Any) -> List[int]:
-    """兼容十六进制字符串、bytes 和逗号分隔数字字符串。
-
-    返回完整 payload 字节数组，不在这里截取波形。这样 API 可以同时返回
-    原始帧和解析后的 4000 个有效波形点，便于排查设备协议问题。
-    """
-    text = _to_text(payload).strip()
-    if not text:
-        return []
-
+def decode_frame(row, max_points=None):
+    samples = payload_to_samples(row.get("PAYLOAD"))
+    if max_points is not None and len(samples) > max_points:
+        samples = samples[:max_points]
+    parsed, frame_error = None, None
     try:
-        # 兼容历史数据：数据库可能直接保存 "128,129,130" 一类采样值。
-        if "," in text:
-            return [int(float(x.strip())) for x in text.split(",") if x.strip() != ""]
+        parsed = parse_tdr_payload_hex(str(row.get("PAYLOAD") or ""))
+        waveform_samples = parsed["waveform_4000"]
+    except Exception as exc:
+        waveform_samples = extract_waveform_from_samples(samples)
+        frame_error = str(exc)
+    return {
+        "phase_pair": parsed.get("phase_pair") if parsed else None,
+        "phase_pair_code": parsed.get("phase_pair_code") if parsed else None,
+        "fault_type": parsed.get("device_fault_type") if parsed else None,
+        "fault_distance_m": parsed.get("device_fault_distance_m") if parsed else None,
+        "interphase_results": parsed.get("device_result_all") if parsed else {},
+        "device_reported_cable_length_m": parsed.get("device_reported_cable_length_m") if parsed else None,
+        "frame_valid": parsed is not None,
+        "frame_error": frame_error,
+        "points": len(samples),
+        "waveform_points": len(waveform_samples),
+        "samples": samples,
+        "waveform_samples": waveform_samples,
+    }
 
-        hx = _clean_hex(text)
-        if len(hx) % 2 == 1:
-            hx = hx[:-1]
 
-        if hx and len(hx) % 2 == 0 and all(c in _HEX_CHARS for c in hx):
-            return [int(hx[i:i + 2], 16) for i in range(0, len(hx), 2)]
-    except Exception:
-        return []
-
-    return []
+def _empty_frame(imei, phase_pair=None):
+    return {
+        "imei": imei, "frame_id": None, "samples": [], "waveform_samples": [],
+        "points": 0, "waveform_points": 0, "frame_valid": False,
+        "phase_pair": phase_pair, "interphase_results": {},
+    }
 
 
-def extract_waveform_from_samples(samples: List[int]) -> List[int]:
-    """从完整帧提取 Byte33~4032 的 4000 个原始 uint8 波形点。
+def latest(conn, imei, phase_pair):
+    with conn.cursor() as cursor:
+        row = waveforms.find_latest_frame(cursor, imei, phase_pair)
+    if not row:
+        return {**_empty_frame(imei, phase_pair), "min": 0, "max": 0}
+    decoded = decode_frame(row)
+    stats = decoded["waveform_samples"] or decoded["samples"]
+    return {
+        **decoded, "frame_id": row.get("ID"), "imei": row.get("IMEI"), "cable": row.get("CABLE"),
+        "created_at": str(row.get("CREATED_AT")) if row.get("CREATED_AT") else None,
+        "min": min(stats) if stats else 0, "max": max(stats) if stats else 0,
+    }
 
-    长度恰好为 4096 时，必须同时满足帧头、帧尾和相间编码要求，否则返回
-    空数组，防止无效帧被前端误画。非 4096 字节数据仍按历史“纯波形数组”
-    兼容返回。
-    """
-    arr = samples if isinstance(samples, list) else []
-    if len(arr) == TDR_TOTAL_BYTES:
-        valid_frame = (
-            arr[0] == TDR_START_BYTE
-            and arr[-1] == TDR_END_BYTE
-            and phase_pair_from_code(arr[1]) is not None
-        )
-        return arr[TDR_WAVE_START:TDR_WAVE_END] if valid_frame else []
-    return arr
+
+def history(conn, imei, frame_id, min_hex_len, max_points):
+    with conn.cursor() as cursor:
+        row = waveforms.find_history_frame(cursor, imei, frame_id, min_hex_len)
+    if not row:
+        return {**_empty_frame(imei), "dt_ns": 10}
+    return {
+        **decode_frame(row, max_points), "imei": imei, "frame_id": row["ID"],
+        "cable": row.get("CABLE"), "dt_ns": 10, "payload_len": row["PAYLOAD_LEN"],
+        "created_at": str(row.get("CREATED_AT")) if row.get("CREATED_AT") else None,
+    }
+
+
+def list_device_ids(conn, limit):
+    with conn.cursor() as cursor:
+        rows = waveforms.list_device_ids(cursor, limit)
+    return {"devices": [row["IMEI"] for row in rows]}
+
+
+def list_frames(conn, imei, limit, before_id):
+    with conn.cursor() as cursor:
+        rows = waveforms.list_frame_rows(cursor, imei, limit, before_id)
+    return {"data": rows, "next_before_id": rows[-1]["ID"] if rows else None}

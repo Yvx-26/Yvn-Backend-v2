@@ -1,6 +1,6 @@
 import unittest
 
-from app.services.waveform import (
+from app.services.compat.waveform import (
     extract_waveform_from_samples,
     payload_to_samples,
 )

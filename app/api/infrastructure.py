@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Path
 
 from app.db.mysql import get_conn
-from app.schemas.infrastructure import ManagedDevice, ManagedLine
+from app.schemas.infrastructure import ManagedDevice, ManagedLineWrite
 from app.services.infrastructure import get_snapshot, save_device, save_line
 
 
@@ -45,7 +45,7 @@ def api_save_managed_device(
 
 @router.put("/lines/{line_id}")
 def api_save_managed_line(
-    data: ManagedLine,
+    data: ManagedLineWrite,
     line_id: str = Path(min_length=1, max_length=64),
 ):
     """新增或更新线路，同时保存设备绑定和线路顺序。"""

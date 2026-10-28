@@ -5,6 +5,9 @@ from fastapi import APIRouter, Query, HTTPException
 from app.core.config import TABLE_BIND
 from app.db.mysql import get_conn
 from app.schemas.device import WaveDeviceBindIn
+from app.schemas.infrastructure import ManagedDevice
+from app.services.infrastructure import list_devices, save_device
+from app.repositories.line_binding import get_device_binding
 
 router = APIRouter()
 
@@ -17,13 +20,11 @@ def api_device_bind(imei: str = Query(...)):
     try:
         conn = get_conn()
         with conn.cursor() as cursor:
-            sql = f"SELECT imei, cable_key, updated_at FROM {TABLE_BIND} WHERE imei=%s LIMIT 1"
-            cursor.execute(sql, (imei,))
-            row = cursor.fetchone()
+            row = get_device_binding(cursor, imei)
 
         if not row:
             return {"imei": imei, "cable_key": ""}
-        return row
+        return {"imei": imei, "cable_key": row.get("cable_key") or "", "updated_at": row.get("updated_at")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -46,6 +47,10 @@ def api_save_device_bind(data: WaveDeviceBindIn):
             raise HTTPException(status_code=400, detail="missing cable_key")
 
         conn = get_conn()
+        managed = next((item for item in list_devices(conn) if item["id"] == imei), None)
+        if managed is not None:
+            save_device(conn, ManagedDevice.model_validate({**managed, "lineId": cable_key}), imei)
+            return {"ok": True, "imei": imei, "cable_key": cable_key}
         with conn.cursor() as cursor:
             sql = f"""
                 INSERT INTO {TABLE_BIND} (imei, cable_key)
@@ -60,6 +65,8 @@ def api_save_device_bind(data: WaveDeviceBindIn):
         return {"ok": True, "imei": imei, "cable_key": cable_key}
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
