@@ -1,7 +1,7 @@
 """未完成数据迁移前保留的旧配置、旧线路台账适配。"""
 
 from typing import Any
-from app.utils.units import metres_to_kilometres
+from app.utils.units import format_metres
 from app.utils.serialization import timestamp_text
 
 
@@ -47,7 +47,7 @@ def legacy_cable_lines(
                 "id": line_id,
                 "name": row.get("cable_name") or line_id,
                 "type": "land",
-                "lengthKm": metres_to_kilometres(row.get("cable_length")),
+                "lengthM": format_metres(row.get("cable_length")),
                 "description": row.get("remark") or "",
                 "state": "enabled",
                 "updatedAt": timestamp_text(row.get("updated_at")),

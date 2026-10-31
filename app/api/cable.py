@@ -5,7 +5,7 @@ from app.db.mysql import get_conn
 from app.schemas.cable import CableInfoIn
 from app.schemas.infrastructure import ManagedLine
 from app.services.infrastructure import list_lines, save_line
-from app.utils.units import metres_to_kilometres
+from app.utils.units import format_metres
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ def get_cable_info(cable_key: str = Query(...)):
         conn = get_conn()
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT line_id AS cable_key, name AS cable_name, length_km * 1000 AS cable_length, "
+                "SELECT line_id AS cable_key, name AS cable_name, length_m AS cable_length, "
                 "description AS remark, updated_at FROM managed_line WHERE line_id=%s",
                 (cable_key,),
             )
@@ -62,7 +62,7 @@ def save_cable_info(data: CableInfoIn):
         if managed is not None:
             save_line(conn, ManagedLine.model_validate({
                 **managed, "name": data.cable_name,
-                "lengthKm": metres_to_kilometres(data.cable_length), "description": data.remark or "",
+                "lengthM": format_metres(data.cable_length), "description": data.remark or "",
             }), data.cable_key)
             return {"status": "ok"}
         with conn.cursor() as cursor:

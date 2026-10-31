@@ -26,12 +26,12 @@ class InfrastructureRelationTests(unittest.TestCase):
         result = service.merge_runtime_devices([configured], [runtime])
         self.assertEqual(result[0]["lineId"], "")
 
-    def test_old_line_length_is_converted_from_metres_to_kilometres(self):
+    def test_old_line_length_keeps_metres_without_another_conversion(self):
         conn = MagicMock()
         conn.cursor.return_value.__enter__.return_value.fetchall.return_value = [
             {"cable_key": "L1", "cable_length": "794480"},
         ]
-        self.assertEqual(service.legacy_cable_lines(conn, [], set())[0]["lengthKm"], "794.48")
+        self.assertEqual(service.legacy_cable_lines(conn, [], set())[0]["lengthM"], "794480")
 
     def test_mismatched_binding_is_not_shown_in_a_managed_line(self):
         conn = MagicMock()
@@ -102,7 +102,7 @@ class InfrastructureRelationTests(unittest.TestCase):
         )
         current = {**device(), "firmwareVersion": "latest"}
         with patch.object(service, "list_devices", return_value=[current]), \
-             patch.object(service, "list_lines", return_value=[{"id": "L2"}]), \
+             patch.object(service, "list_lines", return_value=[{"id": "L2", "lengthM": "0.000"}]), \
              patch.object(service, "_upsert_device") as upsert:
             service.save_line(conn, value, "L2")
         self.assertEqual(upsert.call_args.args[1].firmwareVersion, "latest")

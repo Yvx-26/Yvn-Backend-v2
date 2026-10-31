@@ -26,12 +26,12 @@ class LineBindingTests(unittest.TestCase):
         self.conn.create_collation("utf8mb4_unicode_ci", lambda a, b: (a > b) - (a < b))
         self.conn.executescript("""
             CREATE TABLE managed_device(device_id TEXT PRIMARY KEY, line_id TEXT, updated_at TEXT);
-            CREATE TABLE managed_line(line_id TEXT PRIMARY KEY, name TEXT, length_km NUMERIC);
+            CREATE TABLE managed_line(line_id TEXT PRIMARY KEY, name TEXT, length_m NUMERIC);
             CREATE TABLE wave_device_bind(imei TEXT PRIMARY KEY, cable_key TEXT, updated_at TEXT);
             CREATE TABLE cable_info(cable_key TEXT PRIMARY KEY, cable_name TEXT, cable_length NUMERIC);
             INSERT INTO cable_info VALUES ('OLD', 'Old line', 1500);
             INSERT INTO wave_device_bind VALUES ('D1', 'OLD', 'old-time');
-            INSERT INTO managed_line VALUES ('NEW', 'New line', 2.5);
+            INSERT INTO managed_line VALUES ('NEW', 'New line', 2500);
         """)
 
     def read(self):
@@ -42,7 +42,7 @@ class LineBindingTests(unittest.TestCase):
         self.assertEqual(row["cable_key"], "OLD")
         self.assertEqual(row["cable_length_m"], 1500)
 
-    def test_managed_binding_wins_and_kilometres_are_converted_to_metres(self):
+    def test_managed_binding_wins_and_length_remains_in_metres(self):
         self.conn.execute("INSERT INTO managed_device VALUES ('D1','NEW','new-time')")
         row = self.read()
         self.assertEqual(row["cable_key"], "NEW")

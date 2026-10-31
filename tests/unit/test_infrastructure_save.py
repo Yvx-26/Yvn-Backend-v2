@@ -54,7 +54,7 @@ class InfrastructureSaveTests(unittest.TestCase):
         cursor.fetchall.return_value = [{"line_id": "L1", "sequence_no": 2}]
         cursor.fetchone.side_effect = [{"exists": 1}, {"sequence_no": 4}]
         result = save_device(conn, moved, "D1")
-        statements = [(call.args[0], call.args[1]) for call in cursor.execute.call_args_list]
+        statements = [(call.args[0], call.args[1]) for call in cursor.execute.call_args_list if len(call.args) > 1]
         self.assertTrue(any("DELETE FROM managed_line_device" in sql and values == ("D1",) for sql, values in statements))
         self.assertTrue(any("INSERT INTO managed_line_device" in sql and values == ("L2", "D1", 5) for sql, values in statements))
         self.assertEqual(upsert.call_args_list[-1].args[1].linkedLocatorId, "")

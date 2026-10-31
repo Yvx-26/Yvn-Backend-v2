@@ -7,7 +7,8 @@ from app.schemas.infrastructure import BoundLineDevice, ManagedDevice, ManagedLi
 from app.services.device_inventory import discover_runtime_devices, merge_runtime_devices
 from app.services.compat.infrastructure import legacy_cable_lines, normalize_device_config
 from app.utils.serialization import json_object, timestamp_text
-from app.utils.units import metres_to_kilometres
+from app.utils.units import format_metres
+from app.utils.line_length import route_length_metres
 
 
 def _dump_payload(model: ManagedDevice | ManagedLine | ManagedLineWrite) -> str:
@@ -54,7 +55,7 @@ def list_lines(conn, devices: list[dict[str, Any]] | None = None) -> list[dict[s
     with conn.cursor() as cursor:
         cursor.execute(
             """
-            SELECT line_id, name, line_type, length_km, description, state,
+            SELECT line_id, name, line_type, length_m, description, state,
                    payload_json, updated_at
             FROM managed_line
             ORDER BY line_id
@@ -83,12 +84,13 @@ def list_lines(conn, devices: list[dict[str, Any]] | None = None) -> list[dict[s
     result = []
     for row in line_rows:
         data = json_object(row.get("payload_json"))
+        data.pop("lengthKm", None)
         data.update(
             {
                 "id": row.get("line_id") or "",
                 "name": row.get("name") or "",
                 "type": row.get("line_type") or "land",
-                "lengthKm": str(row.get("length_km") or ""),
+                "lengthM": route_length_metres(bindings.get(row.get("line_id"), [])),
                 "description": row.get("description") or "",
                 "state": row.get("state") or "draft",
                 "updatedAt": timestamp_text(row.get("updated_at")),
@@ -97,6 +99,18 @@ def list_lines(conn, devices: list[dict[str, Any]] | None = None) -> list[dict[s
         )
         result.append(data)
     return result
+
+
+def _persist_route_lengths(conn, devices, affected_lines):
+    """在保存资料的同一事务中刷新线路长度，包含被移出节点的原线路。"""
+    for line in list_lines(conn, devices):
+        if line["id"] not in affected_lines:
+            continue
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "UPDATE managed_line SET length_m=NULLIF(%s,''), updated_at=CURRENT_TIMESTAMP WHERE line_id=%s",
+                (line["lengthM"], line["id"]),
+            )
 
 
 def get_snapshot(conn) -> dict[str, list[dict[str, Any]]]:
@@ -174,13 +188,13 @@ def _ensure_managed_line(cursor, line_id: str, inventory: dict[str, dict[str, An
         raise ValueError(f"线路 {line_id} 不存在")
     line = ManagedLine(
         id=line_id, name=legacy.get("cable_name") or line_id, type="land",
-        lengthKm=metres_to_kilometres(legacy.get("cable_length")),
+        lengthM=format_metres(legacy.get("cable_length")),
         description=legacy.get("remark") or "", state="enabled",
     )
     cursor.execute(
-        "INSERT INTO managed_line (line_id,name,line_type,length_km,description,state,payload_json) "
+        "INSERT INTO managed_line (line_id,name,line_type,length_m,description,state,payload_json) "
         "VALUES (%s,%s,%s,NULLIF(%s,''),%s,%s,%s)",
-        (line.id, line.name, line.type, line.lengthKm, line.description, line.state, _dump_payload(line)),
+        (line.id, line.name, line.type, line.lengthM, line.description, line.state, _dump_payload(line)),
     )
     # 首次建档旧线路时一并保留已有定位顺序，不能让其他节点消失。
     members = sorted(
@@ -243,6 +257,9 @@ def save_device(conn, device: ManagedDevice, previous_id: str) -> dict[str, Any]
                 if updated != item:
                     _upsert_device(cursor, ManagedDevice.model_validate(updated))
         devices = list_devices(conn)
+        affected_lines = {normalized.lineId, *(row["line_id"] for row in bindings)}
+        affected_lines.update(item["lineId"] for item in configured_devices if item["id"] == previous_id)
+        _persist_route_lengths(conn, devices, affected_lines)
         result = next(item for item in devices if item["id"] == device.id)
         conn.commit()
         return result
@@ -271,6 +288,9 @@ def save_line(conn, line: ManagedLine | ManagedLineWrite, previous_id: str) -> d
             if by_id[member.id].get("category") == "monitor":
                 raise ValueError("线路顺序只能绑定定位设备或一体化终端")
         affected = {item.id for item in line.devices}
+        line.lengthM = route_length_metres([
+            {**by_id[member.id], "sequence": member.sequence} for member in line.devices
+        ])
         with conn.cursor() as cursor:
             _rename_key(cursor, "managed_line", "line_id", previous_id, line.id)
             if previous_id != line.id:
@@ -287,11 +307,11 @@ def save_line(conn, line: ManagedLine | ManagedLineWrite, previous_id: str) -> d
             cursor.execute(
                 """
                 INSERT INTO managed_line
-                    (line_id, name, line_type, length_km, description, state, payload_json)
+                    (line_id, name, line_type, length_m, description, state, payload_json)
                 VALUES (%s, %s, %s, NULLIF(%s, ''), %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     name=VALUES(name), line_type=VALUES(line_type),
-                    length_km=VALUES(length_km), description=VALUES(description),
+                    length_m=VALUES(length_m), description=VALUES(description),
                     state=VALUES(state), payload_json=VALUES(payload_json),
                     updated_at=CURRENT_TIMESTAMP
                 """,
@@ -299,7 +319,7 @@ def save_line(conn, line: ManagedLine | ManagedLineWrite, previous_id: str) -> d
                     line.id,
                     line.name,
                     line.type,
-                    line.lengthKm,
+                    line.lengthM,
                     line.description,
                     line.state,
                     # 排序只存关系，不再额外存一份会过期的完整设备配置。
@@ -348,7 +368,11 @@ def save_line(conn, line: ManagedLine | ManagedLineWrite, previous_id: str) -> d
                     (line.id, device.id, device.sequence),
                 )
 
-        result = next(item for item in list_lines(conn) if item["id"] == line.id)
+        saved_devices = list(by_id.values())
+        affected_lines = {line.id, previous_id}
+        affected_lines.update(original[item]["lineId"] for item in member_ids if item in original)
+        _persist_route_lengths(conn, saved_devices, affected_lines)
+        result = next(item for item in list_lines(conn, saved_devices) if item["id"] == line.id)
         conn.commit()
         return result
     except Exception:

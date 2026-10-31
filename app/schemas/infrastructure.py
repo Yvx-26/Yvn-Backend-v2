@@ -59,7 +59,7 @@ class ManagedLine(StrictModel):
     id: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)
     type: Literal["submarine", "land", "hybrid"]
-    lengthKm: str = ""
+    lengthM: str = ""
     description: str = ""
     state: Literal["enabled", "verification", "draft"]
     updatedAt: str = ""

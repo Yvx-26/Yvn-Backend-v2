@@ -61,7 +61,7 @@ class Connection:
         self.fail_membership = False
         self.raw.executescript("""
             CREATE TABLE managed_line (
-                line_id TEXT PRIMARY KEY, name TEXT, line_type TEXT, length_km NUMERIC,
+                line_id TEXT PRIMARY KEY, name TEXT, line_type TEXT, length_m NUMERIC,
                 description TEXT, state TEXT, payload_json TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
             CREATE TABLE managed_device (
@@ -101,7 +101,7 @@ class InfrastructureLifecycleTests(unittest.TestCase):
 
     def line(self, line_id, *members):
         return ManagedLineWrite(
-            id=line_id, name=line_id, type="land", lengthKm="1.5", state="enabled",
+            id=line_id, name=line_id, type="land", lengthM="1500", state="enabled",
             devices=[{"id": value, "sequence": index + 1} for index, value in enumerate(members)],
         )
 
@@ -130,7 +130,7 @@ class InfrastructureLifecycleTests(unittest.TestCase):
         self.assertEqual(self.snapshot_devices()["D1"]["lineId"], "")
         with self.conn.cursor() as cur:
             self.assertIsNone(get_device_binding(cur, "D1")["cable_key"])
-            self.assertEqual(get_bound_cable_info(cur, "M1"), ("NEW", 1500.0))
+            self.assertEqual(get_bound_cable_info(cur, "M1"), ("NEW", 0.0))
 
     def test_membership_failure_rolls_back_line_devices_and_links(self):
         self.configure_monitor()
@@ -151,13 +151,13 @@ class InfrastructureLifecycleTests(unittest.TestCase):
         self.assertEqual(self.snapshot_devices()["D1"]["lineId"], "L2")
         with patch.object(cable, "get_conn", return_value=self.conn):
             cable.save_cable_info(CableInfoIn(cable_key="L2", cable_name="Edited", cable_length=2500))
-            self.assertEqual(float(cable.get_cable_info("L2")["cable_length"]), 2500)
+            self.assertEqual(float(cable.get_cable_info("L2")["cable_length"]), 0)
         with self.conn.cursor() as cur:
-            self.assertEqual(get_bound_cable_info(cur, "D1"), ("L2", 2500.0))
+            self.assertEqual(get_bound_cable_info(cur, "D1"), ("L2", 0.0))
 
     def request_line(self, members):
         body = json.dumps({
-            "id": "OLD", "name": "Legacy", "type": "land", "lengthKm": "1.5",
+            "id": "OLD", "name": "Legacy", "type": "land", "lengthM": "1500",
             "state": "enabled", "devices": members,
         }).encode()
         messages = []

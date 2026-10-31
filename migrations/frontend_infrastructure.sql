@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS managed_line (
     line_id VARCHAR(64) NOT NULL,
     name VARCHAR(128) NOT NULL,
     line_type ENUM('submarine', 'land', 'hybrid') NOT NULL,
-    length_km DECIMAL(12, 3) NULL,
+    length_m DECIMAL(15, 3) NULL,
     description TEXT NOT NULL,
     state ENUM('enabled', 'verification', 'draft') NOT NULL DEFAULT 'draft',
     payload_json JSON NOT NULL,

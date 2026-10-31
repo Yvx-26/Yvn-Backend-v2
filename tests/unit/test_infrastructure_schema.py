@@ -48,7 +48,7 @@ class InfrastructureSchemaTests(unittest.TestCase):
                 "id": "LINE-A",
                 "name": "A 段",
                 "type": "submarine",
-                "lengthKm": "18.6",
+                "lengthM": "18.6",
                 "description": "主干线路",
                 "state": "enabled",
                 "updatedAt": "",

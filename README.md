@@ -32,6 +32,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 - migrations/frontend_infrastructure.sql：线路、设备资料及节点顺序。
 - migrations/latest_tdr_frame_protocol.sql：最新相间协议字段。
 - migrations/ingestion_receipts.sql：可靠接收回执。
+- migrations/line_length_metres.sql：已有数据库的线路长度从千米转换为米。升级本版前手动执行；新库使用最新版 frontend_infrastructure.sql。
 
 **当前回执迁移仅已生成，尚未执行。新版 MQTT 可靠消费启用前必须先完成该迁移；缺表时消息保留在本地等待，不持续入库。**
 本地 var/ 目录必须可写并持久保存，不能作为临时缓存清空。
@@ -69,6 +70,7 @@ Backend.v2/
 ## 已实现功能
 
 - 线路、设备档案及定位节点绑定、排序，兼容旧资料来源。
+- 线路长度统一使用米（lengthM / length_m），按节点顺序和坐标自动估算，保存资料时重新计算入库。
 - 4096 字节设备帧解析：4000 点波形、10 组相间结果和设备上报长度。
 - 最新/指定相间波形、历史帧分页、设备状态、定位和大屏汇总查询。
 - MQTT 本地持久接收、断线重连、后台重试、回执去重及失败隔离；启用条件见上文。

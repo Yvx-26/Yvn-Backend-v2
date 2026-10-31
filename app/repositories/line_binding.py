@@ -2,7 +2,7 @@
 
 LINE_ID_SQL = "CASE WHEN m.device_id IS NOT NULL THEN NULLIF(m.line_id, '') ELSE b.cable_key END"
 LINE_NAME_SQL = f"COALESCE(l.name, c.cable_name, {LINE_ID_SQL})"
-LINE_LENGTH_M_SQL = "CASE WHEN l.line_id IS NOT NULL THEN l.length_km * 1000 ELSE c.cable_length END"
+LINE_LENGTH_M_SQL = "CASE WHEN l.line_id IS NOT NULL THEN l.length_m ELSE c.cable_length END"
 
 
 def line_joins(device_column: str) -> str:
@@ -34,7 +34,7 @@ def get_bound_cable_info(cursor, imei: str):
     根据设备 IMEI 查询绑定的电缆编号和电缆长度。
 
     已建档设备使用 managed_*，未建档时兼容旧绑定。
-    managed_line.length_km 转为米；旧 cable_info.cable_length 本身为米。
+    managed_line.length_m 与旧 cable_info.cable_length 均为米，无需换算。
 
     返回：
         cable_key, cable_length_m
