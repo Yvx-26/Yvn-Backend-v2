@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.config import DEFAULT_MIN_HEX_LEN
+from app.protocols.tdr import PHASE_PAIR_ORDER
 from app.db.mysql import get_conn
 from app.services import waveform as waveform_service
 
@@ -33,8 +34,14 @@ def list_frames(
     imei: str = Query(...),
     limit: int = Query(50, ge=1, le=500),
     before_id: Optional[int] = Query(None),
+    phase_pair: Optional[str] = None,
 ):
-    """分页返回指定设备的历史原始帧摘要。"""
+    """分页返回历史帧，可选相间筛选并附带该帧故障摘要。"""
+    if phase_pair is not None:
+        selected = phase_pair.strip().upper()
+        if selected not in PHASE_PAIR_ORDER:
+            raise HTTPException(status_code=400, detail=f"invalid phase_pair: {phase_pair}")
+        return _query(waveform_service.list_frames, imei, limit, before_id, selected)
     return _query(waveform_service.list_frames, imei, limit, before_id)
 
 

@@ -1,6 +1,24 @@
 """原始帧查询，保留历史接口和大屏接口不同的筛选、排序语义。"""
 
 from app.core.config import TABLE_RAW
+from app.protocols.tdr import PHASE_PAIR_ORDER
+
+
+def find_latest_phase_frames(cursor, imei):
+    """每个相间各取最近一帧；同秒上报按 ID 决定先后。只对最终十帧读取 payload。"""
+    placeholders = ", ".join(["%s"] * len(PHASE_PAIR_ORDER))
+    cursor.execute(f"""
+        SELECT raw.ID, raw.IMEI, raw.CABLE, raw.PAYLOAD, raw.PAYLOAD_LEN, raw.CREATED_AT
+        FROM {TABLE_RAW} raw
+        JOIN (
+            SELECT ID, ROW_NUMBER() OVER (
+                PARTITION BY CABLE ORDER BY CREATED_AT DESC, ID DESC
+            ) AS phase_rank
+            FROM {TABLE_RAW}
+            WHERE IMEI=%s AND CABLE IN ({placeholders})
+        ) ranked ON ranked.ID=raw.ID AND ranked.phase_rank=1
+    """, (imei, *PHASE_PAIR_ORDER))
+    return cursor.fetchall()
 
 
 def list_device_ids(cursor, limit):
@@ -16,8 +34,17 @@ def list_device_ids(cursor, limit):
     return cursor.fetchall()
 
 
-def list_frame_rows(cursor, imei, limit, before_id):
-    if before_id is not None:
+def list_frame_rows(cursor, imei, limit, before_id, phase_pair=None):
+    if phase_pair is not None:
+        before_sql = " AND ID < %s" if before_id is not None else ""
+        params = (imei, phase_pair, before_id, limit) if before_id is not None else (imei, phase_pair, limit)
+        cursor.execute(f"""
+            SELECT ID, IMEI, CABLE, PAYLOAD_LEN, CREATED_AT, PAYLOAD
+            FROM {TABLE_RAW}
+            WHERE IMEI=%s AND CABLE=%s{before_sql}
+            ORDER BY ID DESC LIMIT %s
+        """, params)
+    elif before_id is not None:
         cursor.execute(f"""
             SELECT ID, IMEI, CABLE, PAYLOAD_LEN, CREATED_AT
             FROM {TABLE_RAW}

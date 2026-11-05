@@ -1,6 +1,6 @@
 """公共波形业务：统一解码，按原接口投影响应；不负责 HTTP 或事务提交。"""
 
-from app.protocols.tdr import parse_tdr_payload_hex
+from app.protocols.tdr import PHASE_PAIR_ORDER, parse_tdr_payload_hex
 from app.repositories import waveforms
 from app.services.compat.waveform import payload_to_samples, extract_waveform_from_samples
 
@@ -40,15 +40,39 @@ def _empty_frame(imei, phase_pair=None):
     }
 
 
-def latest(conn, imei, phase_pair):
+def latest_phase_states(conn, imei):
+    """方块状态独立于选中的波形帧，绝不使用其他相间帧的附带结果填充。"""
+    with conn.cursor() as cursor:
+        rows = waveforms.find_latest_phase_frames(cursor, imei)
+    states = {
+        pair: {"frame_id": None, "created_at": None, "frame_valid": False,
+               "frame_error": None, "result": None}
+        for pair in PHASE_PAIR_ORDER
+    }
+    for row in rows:
+        pair = row["CABLE"]
+        state = states[pair]
+        state.update(frame_id=row["ID"], created_at=str(row["CREATED_AT"]) if row.get("CREATED_AT") else None)
+        try:
+            parsed = parse_tdr_payload_hex(str(row.get("PAYLOAD") or ""))
+            if parsed["phase_pair"] != pair:
+                raise ValueError("stored phase pair does not match frame Byte1")
+            state.update(frame_valid=True, result=parsed["device_result_all"][pair])
+        except (ValueError, TypeError) as exc:
+            state["frame_error"] = str(exc)
+    return states
+
+
+def latest(conn, imei, phase_pair, include_phase_states=False):
     with conn.cursor() as cursor:
         row = waveforms.find_latest_frame(cursor, imei, phase_pair)
+    extra = {"phase_states": latest_phase_states(conn, imei)} if include_phase_states else {}
     if not row:
-        return {**_empty_frame(imei, phase_pair), "min": 0, "max": 0}
+        return {**_empty_frame(imei, phase_pair), "min": 0, "max": 0, **extra}
     decoded = decode_frame(row)
     stats = decoded["waveform_samples"] or decoded["samples"]
     return {
-        **decoded, "frame_id": row.get("ID"), "imei": row.get("IMEI"), "cable": row.get("CABLE"),
+        **decoded, **extra, "frame_id": row.get("ID"), "imei": row.get("IMEI"), "cable": row.get("CABLE"),
         "created_at": str(row.get("CREATED_AT")) if row.get("CREATED_AT") else None,
         "min": min(stats) if stats else 0, "max": max(stats) if stats else 0,
     }
@@ -72,7 +96,20 @@ def list_device_ids(conn, limit):
     return {"devices": [row["IMEI"] for row in rows]}
 
 
-def list_frames(conn, imei, limit, before_id):
+def list_frames(conn, imei, limit, before_id, phase_pair=None):
     with conn.cursor() as cursor:
-        rows = waveforms.list_frame_rows(cursor, imei, limit, before_id)
+        rows = (waveforms.list_frame_rows(cursor, imei, limit, before_id, phase_pair)
+                if phase_pair is not None else waveforms.list_frame_rows(cursor, imei, limit, before_id))
+    if phase_pair is not None:
+        for row in rows:
+            payload = row.pop("PAYLOAD", "")
+            try:
+                parsed = parse_tdr_payload_hex(str(payload or ""))
+                if parsed["phase_pair"] != phase_pair:
+                    raise ValueError("stored phase pair does not match frame Byte1")
+                row.update(frame_valid=True, frame_error=None,
+                           fault_type=parsed["device_fault_type"],
+                           fault_distance_m=parsed["device_fault_distance_m"])
+            except (ValueError, TypeError) as exc:
+                row.update(frame_valid=False, frame_error=str(exc), fault_type=None, fault_distance_m=None)
     return {"data": rows, "next_before_id": rows[-1]["ID"] if rows else None}

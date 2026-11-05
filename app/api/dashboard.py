@@ -36,11 +36,14 @@ def api_dashboard_devices():
 def api_dashboard_wave_latest(
     imei: str,
     phase_pair: Optional[str] = Query(None),
+    include_phase_states: bool = False,
 ):
     """返回指定设备最新一帧，或指定相间最近一帧的 4000 点有效波形。"""
     selected_phase = phase_pair.strip().upper() if phase_pair is not None else None
     if selected_phase is not None and selected_phase not in PHASE_PAIR_ORDER:
         raise HTTPException(status_code=400, detail=f"invalid phase_pair: {phase_pair}")
+    if include_phase_states:
+        return _query(waveform_service.latest, imei, selected_phase, True)
     return _query(waveform_service.latest, imei, selected_phase)
 
 
