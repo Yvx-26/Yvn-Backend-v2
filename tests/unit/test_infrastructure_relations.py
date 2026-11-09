@@ -1,9 +1,11 @@
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from app.schemas.infrastructure import ManagedDevice, ManagedLine, ManagedLineWrite
 from pydantic import ValidationError
 from app.services import infrastructure as service
+from app.services import device_inventory
 
 
 def device(device_id="D1", line_id="L1", category="locator", linked=""):
@@ -25,6 +27,21 @@ class InfrastructureRelationTests(unittest.TestCase):
         runtime = {**device(), "lastSeen": "now", "updatedAt": "now"}
         result = service.merge_runtime_devices([configured], [runtime])
         self.assertEqual(result[0]["lineId"], "")
+
+    def test_device_snapshot_uses_saved_threshold_and_relevant_report_sources(self):
+        now = datetime.now()
+        wave = {"device_id": "D1", "last_wave_time": now - timedelta(seconds=400)}
+        gps = {"device_id": "D1", "updated_at": now - timedelta(seconds=120)}
+        configured = device(category="integrated")
+        configured["network"]["offlineThresholdSeconds"] = "300"
+        with patch.object(service, "discover_runtime_devices", device_inventory.discover_runtime_devices), \
+                patch.object(device_inventory, "inventory_rows", return_value=([wave], [gps], [])), \
+                patch.object(service, "list_devices", return_value=[configured]), \
+                patch.object(service, "list_lines", return_value=[]), \
+                patch.object(service, "legacy_cable_lines", return_value=[]):
+            self.assertEqual(service.get_snapshot(MagicMock())["devices"][0]["state"], "online")
+            configured["category"] = "monitor"
+            self.assertEqual(service.get_snapshot(MagicMock())["devices"][0]["state"], "offline")
 
     def test_old_line_length_keeps_metres_without_another_conversion(self):
         conn = MagicMock()

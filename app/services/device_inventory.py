@@ -4,10 +4,11 @@ from datetime import datetime
 from typing import Any
 
 from app.repositories.device_inventory import inventory_rows
+from app.services.device_presence import DEFAULT_OFFLINE_THRESHOLD_SECONDS, is_online
 from app.utils.serialization import timestamp_text
 
 
-def discover_runtime_devices(conn) -> list[dict[str, Any]]:
+def discover_runtime_devices(conn, managed_devices=()) -> list[dict[str, Any]]:
     """从真实采集表发现设备，不要求先在 managed_device 中人工建档。"""
 
     wave_rows, location_rows, binding_rows = inventory_rows(conn)
@@ -18,6 +19,7 @@ def discover_runtime_devices(conn) -> list[dict[str, Any]]:
         str(row["imei"]): str(row.get("cable_key") or "") for row in binding_rows
     }
     device_ids = sorted(set(wave_by_id) | set(location_by_id))
+    managed_by_id = {str(item["id"]): item for item in managed_devices}
     now = datetime.now()
     result: list[dict[str, Any]] = []
 
@@ -26,14 +28,21 @@ def discover_runtime_devices(conn) -> list[dict[str, Any]]:
         location = location_by_id.get(device_id)
         last_wave = wave.get("last_wave_time") if wave else None
         last_location = location.get("updated_at") if location else None
-        activity_values = [
-            value for value in (last_wave, last_location) if isinstance(value, datetime)
-        ]
-        last_activity = max(activity_values) if activity_values else None
-        online = bool(last_activity and (now - last_activity).total_seconds() <= 90)
         has_wave = wave is not None
         has_location = location is not None
         category = "integrated" if has_wave and has_location else "monitor" if has_wave else "locator"
+        configured = managed_by_id.get(device_id, {})
+        configured_category = configured.get("category", category)
+        activity_values = []
+        if configured_category != "locator" and isinstance(last_wave, datetime):
+            activity_values.append(last_wave)
+        if configured_category != "monitor" and isinstance(last_location, datetime):
+            activity_values.append(last_location)
+        last_activity = max(activity_values, default=None)
+        age_seconds = (now - last_activity).total_seconds() if last_activity is not None else None
+        network = configured.get("network")
+        threshold = network.get("offlineThresholdSeconds") if isinstance(network, dict) else None
+        online = is_online(age_seconds, threshold)
         lng = float(location.get("lng")) if location and location.get("lng") is not None else 0.0
         lat = float(location.get("lat")) if location and location.get("lat") is not None else 0.0
 
@@ -62,7 +71,7 @@ def discover_runtime_devices(conn) -> list[dict[str, Any]]:
                     "heartbeatSeconds": "30",
                     "retrySeconds": "5",
                     "timeoutSeconds": "10",
-                    "offlineThresholdSeconds": "90",
+                    "offlineThresholdSeconds": str(DEFAULT_OFFLINE_THRESHOLD_SECONDS),
                 },
                 "acquisition": {
                     "batchSize": 4000,

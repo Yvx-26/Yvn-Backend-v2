@@ -2,6 +2,8 @@
 
 from app.repositories.line_binding import LINE_ID_SQL, LINE_NAME_SQL, line_joins
 
+OFFLINE_THRESHOLD_SQL = "JSON_UNQUOTE(JSON_EXTRACT(m.payload_json, '$.network.offlineThresholdSeconds'))"
+
 
 def summary(cursor):
     cursor.execute("SELECT COUNT(DISTINCT IMEI) AS device_total FROM DEVICE_RAW_FRAME")
@@ -20,7 +22,8 @@ def device_rows(cursor):
         {LINE_ID_SQL} AS cable_key,
         {LINE_NAME_SQL} AS cable_name,
         t.CREATED_AT AS last_wave_time,
-        TIMESTAMPDIFF(SECOND, t.CREATED_AT, NOW()) AS age_seconds
+        TIMESTAMPDIFF(SECOND, t.CREATED_AT, NOW()) AS age_seconds,
+        {OFFLINE_THRESHOLD_SQL} AS offline_threshold_seconds
     FROM (
         SELECT IMEI, MAX(CREATED_AT) AS CREATED_AT
         FROM DEVICE_RAW_FRAME
@@ -44,7 +47,8 @@ def map_rows(cursor):
             d.updated_at AS updated_at,
             {LINE_ID_SQL} AS cable_key,
             {LINE_NAME_SQL} AS cable_name,
-            TIMESTAMPDIFF(SECOND, d.updated_at, NOW()) AS age_seconds
+            TIMESTAMPDIFF(SECOND, d.updated_at, NOW()) AS age_seconds,
+            {OFFLINE_THRESHOLD_SQL} AS offline_threshold_seconds
         FROM device_location_latest d
         {line_joins('d.device_id')}
         WHERE d.lng IS NOT NULL AND d.lat IS NOT NULL
@@ -108,16 +112,17 @@ def recent_record_rows(cursor):
     return cursor.fetchall() or []
 
 
-def device_counts(cursor):
+def wave_activity_rows(cursor):
     cursor.execute(
-        """
-        SELECT COUNT(*) AS device_total,
-               SUM(CASE WHEN age_seconds <= 90 THEN 1 ELSE 0 END) AS online_total
+        f"""
+        SELECT TIMESTAMPDIFF(SECOND, latest.CREATED_AT, NOW()) AS age_seconds,
+               {OFFLINE_THRESHOLD_SQL} AS offline_threshold_seconds
         FROM (
-            SELECT TIMESTAMPDIFF(SECOND, MAX(CREATED_AT), NOW()) AS age_seconds
+            SELECT IMEI, MAX(CREATED_AT) AS CREATED_AT
             FROM DEVICE_RAW_FRAME
             GROUP BY IMEI
         ) latest
+        LEFT JOIN managed_device m ON m.device_id = latest.IMEI COLLATE utf8mb4_unicode_ci
         """
     )
-    return cursor.fetchone() or {}
+    return cursor.fetchall() or []

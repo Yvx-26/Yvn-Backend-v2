@@ -114,7 +114,8 @@ def _persist_route_lengths(conn, devices, affected_lines):
 
 
 def get_snapshot(conn) -> dict[str, list[dict[str, Any]]]:
-    devices = merge_runtime_devices(list_devices(conn), discover_runtime_devices(conn))
+    managed = list_devices(conn)
+    devices = merge_runtime_devices(managed, discover_runtime_devices(conn, managed))
     lines = list_lines(conn, devices)
     lines.extend(legacy_cable_lines(conn, devices, {str(line["id"]) for line in lines}))
     return {"devices": devices, "lines": lines}

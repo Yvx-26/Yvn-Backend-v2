@@ -1,6 +1,7 @@
 """大屏统计与显示状态组装；不接收 HTTP 请求，不执行 SQL。"""
 
 from app.repositories import dashboard as queries
+from app.services.device_presence import is_online
 
 
 def summary(conn):
@@ -30,7 +31,7 @@ def devices(conn):
                 "cable_key": row.get("cable_key"),
                 "cable_name": row.get("cable_name"),
                 "last_wave_time": str(row.get("last_wave_time")) if row.get("last_wave_time") else None,
-                "online": age_seconds is not None and int(age_seconds) <= 90,
+                "online": is_online(age_seconds, row.get("offline_threshold_seconds")),
                 "age_seconds": int(age_seconds) if age_seconds is not None else None,
             })
         return out
@@ -48,6 +49,9 @@ def map_points(conn):
             ts = row.get('ts') if isinstance(row, dict) else row[3]
             updated_at = row.get('updated_at') if isinstance(row, dict) else row[4]
             age_seconds = row.get('age_seconds') if isinstance(row, dict) else row[7]
+            threshold = row.get('offline_threshold_seconds') if isinstance(row, dict) else (
+                row[8] if len(row) > 8 else None
+            )
 
             items.append({
                 'imei': row.get('imei') if isinstance(row, dict) else row[0],
@@ -57,7 +61,7 @@ def map_points(conn):
                 'updated_at': str(updated_at) if updated_at is not None else None,
                 'cable_key': row.get('cable_key') if isinstance(row, dict) else row[5],
                 'cable_name': row.get('cable_name') if isinstance(row, dict) else row[6],
-                'online': age_seconds is not None and int(age_seconds) <= 90,
+                'online': is_online(age_seconds, threshold),
                 'age_seconds': int(age_seconds) if age_seconds is not None else None,
             })
         return items
@@ -80,9 +84,12 @@ def operation(conn):
 
         record_rows = queries.recent_record_rows(cur)
 
-        device_counts = queries.device_counts(cur)
-        device_total = int(device_counts.get("device_total") or 0)
-        online_total = int(device_counts.get("online_total") or 0)
+        wave_activity = queries.wave_activity_rows(cur)
+        device_total = len(wave_activity)
+        online_total = sum(
+            is_online(row.get("age_seconds"), row.get("offline_threshold_seconds"))
+            for row in wave_activity
+        )
         online_rate = round((online_total / device_total) * 100, 1) if device_total else 0.0
 
         return {
